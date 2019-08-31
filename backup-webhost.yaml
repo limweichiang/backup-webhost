@@ -9,25 +9,28 @@
 
 - name: Backup web host data
   hosts: "{{ webhost_ssh_host }}"
+  vars:
+    webhost: "{{ webhost_co }}_{{ webhost_ssh_host}}"
+    datetime: "{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}"
   tasks:
   - name: Create backup directory
     file:
-      path: "~/backup-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}"
+      path: "~/backup-{{ datetime }}"
       state: directory
   - name: Backup web host Wordpress MySQL DB
-    shell: "mysqldump --databases {{ webhost_db_target }} --user {{ webhost_db_user}} --password='{{ webhost_db_passwd }}' > {{ webhost_co }}-{{ webhost_ssh_host}}-mysqldump-{{ webhost_db_target }}-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}.sql"
+    shell: "mysqldump --databases {{ webhost_db_target }} --user {{ webhost_db_user}} --password='{{ webhost_db_passwd }}' > {{ webhost }}_mysqldump_{{ webhost_db_target }}-{{ datetime }}.sql"
     args: 
       chdir: "~/backup-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}"
   - name: Archive home directory, excluding target archive file
-    shell: "tar --exclude={{ webhost_co }}_{{ webhost_ssh_host}}_backup_{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}.tar.gz -czpsf {{ webhost_co }}_{{ webhost_ssh_host}}_backup_{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}.tar.gz --transform 's,^,{{ webhost_co }}_{{ webhost_ssh_host}}_backup_{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}/,' -C ~ ."
+    shell: "tar --exclude={{ webhost }}_backup_{{ datetime }}.tar.gz -czpsf {{ webhost}}_backup_{{ datetime }}.tar.gz --transform 's,^,{{ webhost }}_backup_{{ datetime }}/,' -C ~ ."
     args:
-      chdir: "~/backup-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}"
+      chdir: "~/backup-{{ datetime }}"
   - name: Fetch backup archive
     fetch:
-      src: "~/backup-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}/{{ webhost_co }}_{{ webhost_ssh_host}}_backup_{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}.tar.gz"
+      src: "~/backup-{{ datetime }}/{{ webhost }}_backup_{{ datetime }}.tar.gz"
       dest: "{{ backup_dst_dir }}"
       flat: yes
   - name: Remove backup directory and files
     file:
-      path: "~/backup-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}"
+      path: "~/backup-{{ datetime }}"
       state: absent

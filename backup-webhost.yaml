@@ -1,0 +1,33 @@
+---
+
+- name: Assign backup date & time
+  hosts: localhost
+  tasks:
+    - name: Retrieve localhost date & time
+      debug:
+        var: ansible_date_time
+
+- name: Backup web host data
+  hosts: "{{ webhost_ssh_host }}"
+  tasks:
+  - name: Create backup directory
+    file:
+      path: "~/backup-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}"
+      state: directory
+  - name: Backup web host Wordpress MySQL DB
+    shell: "mysqldump --databases {{ webhost_db_target }} --user {{ webhost_db_user}} --password='{{ webhost_db_passwd }}' > {{ webhost_co }}-{{ webhost_ssh_host}}-mysqldump-{{ webhost_db_target }}-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}.sql"
+    args: 
+      chdir: "~/backup-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}"
+  - name: Archive home directory, excluding target archive file
+    shell: "tar --exclude={{ webhost_co }}_{{ webhost_ssh_host}}_backup_{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}.tar.gz -czpsf {{ webhost_co }}_{{ webhost_ssh_host}}_backup_{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}.tar.gz --transform 's,^,{{ webhost_co }}_{{ webhost_ssh_host}}_backup_{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}/,' -C ~ ."
+    args:
+      chdir: "~/backup-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}"
+  - name: Fetch backup archive
+    fetch:
+      src: "~/backup-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}/{{ webhost_co }}_{{ webhost_ssh_host}}_backup_{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}.tar.gz"
+      dest: "{{ backup_dst_dir }}"
+      flat: yes
+  - name: Remove backup directory and files
+    file:
+      path: "~/backup-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}"
+      state: absent

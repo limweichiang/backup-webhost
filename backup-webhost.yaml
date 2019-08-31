@@ -20,7 +20,7 @@
   - name: Backup web host Wordpress MySQL DB
     shell: "mysqldump --databases {{ webhost_db_target }} --user {{ webhost_db_user}} --password='{{ webhost_db_passwd }}' > {{ webhost }}_mysqldump_{{ webhost_db_target }}-{{ datetime }}.sql"
     args: 
-      chdir: "~/backup-{{ ansible_date_time.iso8601_basic_short }}{{ ansible_date_time.tz }}"
+      chdir: "~/backup-{{ datetime }}"
   - name: Archive home directory, excluding target archive file
     shell: "tar --exclude={{ webhost }}_backup_{{ datetime }}.tar.gz -czpsf {{ webhost}}_backup_{{ datetime }}.tar.gz --transform 's,^,{{ webhost }}_backup_{{ datetime }}/,' -C ~ ."
     args:

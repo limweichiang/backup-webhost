@@ -1,1 +1,2 @@
-*.yaml linguist-language=Ansible
+* linguist-vendored
+*.yaml linguist-language=YAML
